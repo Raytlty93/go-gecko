@@ -3,7 +3,7 @@ package coingecko
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -12,19 +12,28 @@ import (
 	"github.com/superoo7/go-gecko/v3/types"
 )
 
-var baseURL = "https://api.coingecko.com/api/v3"
+var (
+	baseURL   = "https://api.coingecko.com/api/v3"
+	apiHeader = "x-cg-demo-api-key"
+)
 
 // Client struct
 type Client struct {
 	httpClient *http.Client
+	apiKey     string
+	apiHeader  string
 }
 
 // NewClient create new client object
-func NewClient(httpClient *http.Client) *Client {
+func NewClient(httpClient *http.Client, apiKey string) *Client {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
-	return &Client{httpClient: httpClient}
+	return &Client{
+		httpClient: httpClient,
+		apiKey:     apiKey,
+		apiHeader:  apiHeader,
+	}
 }
 
 // helper
@@ -35,7 +44,7 @@ func doReq(req *http.Request, client *http.Client) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +57,9 @@ func doReq(req *http.Request, client *http.Client) ([]byte, error) {
 // MakeReq HTTP request helper
 func (c *Client) MakeReq(url string) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
-
+	if req != nil && c.apiKey != "" {
+		req.Header.Add(c.apiHeader, c.apiKey)
+	}
 	if err != nil {
 		return nil, err
 	}
